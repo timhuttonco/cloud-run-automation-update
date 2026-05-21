@@ -1,0 +1,7 @@
+{
+  "name": "sgtm-auto-updater",
+  "version": "1.0.0",
+  "dependencies": {
+    "@google-cloud/run": "^1.3.0"
+  }
+}

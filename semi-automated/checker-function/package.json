@@ -1,6 +1,9 @@
 {
   "name": "sgtm-update-notifier",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "dependencies": {
     "@google-cloud/run": "^1.3.0",
     "@sendgrid/mail": "^8.1.0",

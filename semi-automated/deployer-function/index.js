@@ -1,5 +1,4 @@
 const { ServicesClient } = require('@google-cloud/run').v2;
-
 // This client automatically uses the service account credentials attached to this Cloud Function.
 const runClient = new ServicesClient();
 
@@ -11,15 +10,13 @@ exports.deployGtmUpdate = async (req, res) => {
   try {
     // Construct the fully qualified resource name for your Cloud Run service.
     const name = `projects/${process.env.GCP_PROJECT_ID}/locations/${process.env.GCP_REGION}/services/${process.env.GTM_SERVICE_NAME}`;
-    
     console.log(`[sGTM Bot] Fetching current configuration for service: ${name}`);
     
     // Fetch the existing live configuration of your Cloud Run service.
     // runClient.getService returns an array where the first element is the Service object.
     const [service] = await runClient.getService({ name });
     
-    // Ensure the nested metadata and annotation objects exist to avoid "undefined" errors.
-    service.template = service.template || {};
+    // Ensure the nested metadata and annotation objects exist to avoid "undefined" errors.    service.template = service.template || {};
     service.template.metadata = service.template.metadata || {};
     service.template.metadata.annotations = service.template.metadata.annotations || {};
     
@@ -30,7 +27,6 @@ exports.deployGtmUpdate = async (req, res) => {
     service.template.metadata.annotations['client.knative.dev/user-image'] = cacheBusterUri;
     
     console.log(`[sGTM Bot] Modifying configuration with cache-buster: ${cacheBusterUri}`);
-    console.log('[sGTM Bot] Sending update request to Cloud Run API...');
 
     // Submit the updated configuration back to the Cloud Run API.
     // This is an asynchronous operation. GCP starts spinning up the new containers in the background.
@@ -39,14 +35,13 @@ exports.deployGtmUpdate = async (req, res) => {
     // The API call returns a "Long-Running Operation" object. We call .promise() to pause execution
     // of this function until the Cloud Run deployment completely finishes (or fails).
     await operation.promise(); 
-    
     console.log('[sGTM Bot] Cloud Run deployment completed successfully.');
     
     // Success Response: This HTML is what you will see in your browser tab when you click the email link.
     res.status(200).send(`
       <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; text-align: center; border: 1px solid #d4edda; padding: 20px; border-radius: 8px; background-color: #d4edda; color: #155724;">
         <h1 style="margin-top: 0;">Deployment Success!</h1>
-        <p>Your server-side GTM instance has been successfully updated to the latest stable version via a rolling update.</p>
+        <p>Your server-side GTM instance has been successfully updated to the latest stable version via a zero-downtime rolling update.</p>
       </div>
     `);
 
@@ -57,7 +52,7 @@ exports.deployGtmUpdate = async (req, res) => {
     res.status(500).send(`
       <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; text-align: center; border: 1px solid #f8d7da; padding: 20px; border-radius: 8px; background-color: #f8d7da; color: #721c24;">
         <h1 style="margin-top: 0;">Deployment Failed</h1>
-        <p>An error occurred while updating your sGTM instance. Check GCP Logging for more information.</p>
+        <p>An error occurred while updating your sGTM instance.</p>
         <pre style="text-align: left; background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;">${error.message}</pre>
       </div>
     `);

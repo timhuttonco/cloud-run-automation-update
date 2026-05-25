@@ -2,28 +2,25 @@ const { ServicesClient } = require('@google-cloud/run').v2;
 const sgMail = require('@sendgrid/mail');
 const axios = require('axios');
 
-// Initialise Cloud Run client
+// Ensure that the following environment variables are set before deploying
+// Also update the SEND_GRID_API_KEY to whatever name you give this in Google Cloud Secret Manager
 const runClient = new ServicesClient();
-
-// Configure SendGrid (Loaded via Env variable pointing to Secret Manager)
-// If using different notification system, ensure this is updated
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.checkGtmUpdate = async (req, res) => {
   try {
-    // Your relevant Google Cloud variables - ensure that these are configured before deploying!
+    // Make sure these are created before deploying!
     const projectId = process.env.GCP_PROJECT_ID;
     const region = process.env.GCP_REGION;
     const serviceName = process.env.GTM_SERVICE_NAME;
     
-    // Ensure project ID is updated to the correct value for your environment
     const servicePath = `projects/${projectId}/locations/${region}/services/${serviceName}`;
     
-    // Get current deployed image from Cloud Run
+    // Get current deployed image digest from Cloud Run
     const [service] = await runClient.getService({ name: servicePath });
     const currentImage = service.template.containers[0].image;
     
-    // Fetch the latest for the :stable tag from Google's Registry
+    // Fetch the latest digest for the :stable tag from Google's Registry
     // Note: This API request fetches the token and manifest registry data for the image
     const registryUrl = `https://gcr.io/v2/cloud-tagging-10302018/gtm-cloud-image/manifests/stable`;
     const registryResponse = await axios.get(registryUrl, {
@@ -35,8 +32,8 @@ exports.checkGtmUpdate = async (req, res) => {
     // Cloud Run appends the digest to the image string upon deployment
     if (!currentImage.includes(latestDigest)) {
       console.log('Update available! Sending notification email...');
-      
-      // Target URL for your approval Cloud Function
+
+      // Target URL for your approval Cloud function
       const approvalUrl = process.env.APPROVAL_FUNCTION_URL;
 
       const msg = {
